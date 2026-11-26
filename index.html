@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Tchibo — Кофе в зёрнах</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключите ваш ключ Яндекс Карт при необходимости: &apikey=ВАШ_КЛЮЧ -->
+  <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU"></script>
+  <style>
+    :root {
+      --bg-main: #1C1411;
+      --bg-card: #2E221B;
+      --accent: #C9A66B;
+      --text-main: #F3EADB;
+      --text-muted: rgba(243, 234, 219, 0.7);
+      --border-subtle: rgba(201, 166, 107, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0 0 92px 0;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(28, 20, 17, 0.94);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .cart-pill-btn {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .screen {
+      display: none;
+      padding: 16px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .section-heading {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 14px 0;
+      color: var(--text-main);
+    }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-photo {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: #241914;
+      display: block;
+    }
+
+    .product-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .product-name {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .product-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .price-box {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .vat-note {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .add-btn {
+      width: 100%;
+      background: var(--accent);
+      color: var(--bg-main);
+      border: none;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .qty-stepper {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-main);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .qty-btn {
+      background: transparent;
+      color: var(--accent);
+      border: none;
+      width: 34px;
+      height: 34px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .qty-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 25;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-subtle);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .bottom-bar.hidden {
+      display: none;
+    }
+
+    .primary-btn {
+      width: 100%;
+      background: var(--accent);
+      color: var(--bg-main);
+      border: none;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .cart-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cart-item-info {
+      flex: 1;
+    }
+
+    .cart-total-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 14px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    #ymap {
+      width: 100%;
+      height: 280px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+      background: var(--bg-card);
+    }
+
+    .location-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(0, 0, 0, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: 18px;
+      padding: 22px 18px;
+      text-align: center;
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 0 8px 0;
+    }
+
+    .modal-text {
+      font-size: 14px;
+      color: var(--text-main);
+      line-height: 1.45;
+      margin: 0 0 18px 0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="brand-title">Tchibo</div>
+      <div class="brand-subtitle">Кофе в зёрнах</div>
+    </div>
+    <button class="cart-pill-btn" onclick="openScreen('cart')">
+      Корзина (<span id="headerCartCount">0</span>)
+    </button>
+  </header>
+
+  <!-- ЭКРАН 1: КАТАЛОГ КОФЕ В ЗЁРНАХ -->
+  <main id="screen-catalog" class="screen active">
+    <h1 class="section-heading">Каталог кофе в зёрнах</h1>
+    <div id="catalogGrid" class="catalog-grid"></div>
+  </main>
+
+  <!-- ЭКРАН 2: КОРЗИНА -->
+  <section id="screen-cart" class="screen">
+    <h1 class="section-heading">Корзина</h1>
+    <div id="cartItemsContainer"></div>
+    <div id="cartSummary" class="cart-total-box" style="display: none;">
+      <span>Итого (с НДС):</span>
+      <span id="cartTotalPrice" style="color: var(--accent);">0 ₽</span>
+    </div>
+    <button id="confirmOrderBtn" class="primary-btn" style="display: none;" onclick="openMapScreen()">
+      Подтвердить заказ
+    </button>
+    <button class="secondary-btn" onclick="openScreen('catalog')">
+      ← Вернуться в каталог
+    </button>
+  </section>
+
+  <!-- ЭКРАН 3: ВЫБОР ЛОКАЦИИ НА ЯНДЕКС КАРТАХ -->
+  <section id="screen-map" class="screen">
+    <h1 class="section-heading">Выберите локацию отгрузки</h1>
+    <div id="ymap"></div>
+    <div class="location-box">
+      <div><strong>Выбранная точка:</strong> <span id="selectedAddress">Нажмите на карту или переместите метку</span></div>
+      <div style="margin-top: 4px; color: var(--text-muted);">
+        Координаты: <span id="selectedCoords">41.311081, 69.240562</span>
+      </div>
+    </div>
+    <button class="primary-btn" onclick="confirmLocationAndOrder()">
+      Подтвердить локацию
+    </button>
+    <button class="secondary-btn" onclick="openScreen('cart')">
+      ← Назад в корзину
+    </button>
+  </section>
+
+  <!-- НИЖНЯЯ ПАНЕЛЬ БЫСТРОГО ПЕРЕХОДА В КОРЗИНУ -->
+  <div id="bottomCartBar" class="bottom-bar hidden">
+    <div>
+      <div style="font-size: 12px; color: var(--text-muted);">В корзине: <span id="barCount">0</span> шт.</div>
+      <div style="font-size: 15px; font-weight: 700; color: var(--accent);" id="barTotal">0 ₽</div>
+    </div>
+    <button class="add-btn" style="width: auto; padding: 10px 18px;" onclick="openScreen('cart')">
+      В корзину
+    </button>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ЗАКАЗ ПОДТВЕРЖДЁН -->
+  <div id="confirmedModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-title">Заказ подтверждён</div>
+      <p class="modal-text" id="confirmedDetails">
+        Спасибо за заказ в Tchibo! Локация отгрузки зафиксирована.
+      </p>
+      <button class="primary-btn" onclick="closeConfirmedModal()">
+        Готово
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // Демо-каталог зернового кофе (цены указаны уже с учётом НДС)
+    const PRODUCTS = [
+      {
+        id: 'barista-espresso',
+        name: 'Barista Espresso',
+        weight: '1 кг',
+        priceWithVat: 1890,
+        photo: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'ethiopia-sidamo',
+        name: 'Ethiopia Sidamo',
+        weight: '250 г',
+        priceWithVat: 790,
+        photo: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'colombia-huila',
+        name: 'Colombia Huila',
+        weight: '1 кг',
+        priceWithVat: 2150,
+        photo: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'brazil-santos',
+        name: 'Brazil Santos',
+        weight: '250 г',
+        priceWithVat: 650,
+        photo: 'https://images.unsplash.com/photo-1587734195503-904fca47e0e9?auto=format&fit=crop&w=600&q=80'
+      }
+    ];
+
+    const cart = {}; // { [productId]: quantity }
+    let mapInstance = null;
+    let placemark = null;
+    let selectedCoords = [41.311081, 69.240562];
+    let selectedAddress = 'Точка на карте (41.311081, 69.240562)';
+
+    function formatPrice(val) {
+      return `${val.toLocaleString('ru-RU')} ₽`;
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('catalogGrid');
+      grid.innerHTML = PRODUCTS.map((item) => {
+        const qty = cart[item.id] || 0;
+        const actionControl = qty === 0
+          ? `<button class="add-btn" onclick="changeQty('${item.id}', 1)">В корзину</button>`
+          : `<div class="qty-stepper">
+               <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
+               <span class="qty-value">${qty}</span>
+               <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+             </div>`;
+
+        return `
+          <article class="product-card">
+            <img class="product-photo" src="${item.photo}" alt="${item.name}" loading="lazy" />
+            <div class="product-body">
+              <div>
+                <h2 class="product-name">${item.name}</h2>
+                <div class="product-meta">Зёрна • ${item.weight}</div>
+              </div>
+              <div>
+                <div class="price-box">
+                  ${formatPrice(item.priceWithVat)} <span class="vat-note">с НДС</span>
+                </div>
+                <div style="margin-top: 8px;">${actionControl}</div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function changeQty(productId, delta) {
+      const next = (cart[productId] || 0) + delta;
+      if (next <= 0) {
+        delete cart[productId];
+      } else {
+        cart[productId] = next;
+      }
+      renderCatalog();
+      renderCart();
+      updateCartSummary();
+    }
+
+    function getCartSummary() {
+      let count = 0;
+      let total = 0;
+      const items = [];
+
+      for (const product of PRODUCTS) {
+        const qty = cart[product.id] || 0;
+        if (qty > 0) {
+          count += qty;
+          total += qty * product.priceWithVat;
+          items.push({ ...product, qty });
+        }
+      }
+      return { count, total, items };
+    }
+
+    function updateCartSummary() {
+      const { count, total } = getCartSummary();
+      document.getElementById('headerCartCount').textContent = count;
+      document.getElementById('barCount').textContent = count;
+      document.getElementById('barTotal').textContent = formatPrice(total);
+
+      const bar = document.getElementById('bottomCartBar');
+      const catalogActive = document.getElementById('screen-catalog').classList.contains('active');
+      if (count > 0 && catalogActive) {
+        bar.classList.remove('hidden');
+      } else {
+        bar.classList.add('hidden');
+      }
+    }
+
+    function renderCart() {
+      const { items, total } = getCartSummary();
+      const container = document.getElementById('cartItemsContainer');
+      const summary = document.getElementById('cartSummary');
+      const confirmBtn = document.getElementById('confirmOrderBtn');
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="empty-state">Корзина пока пуста. Выберите кофе в каталоге.</div>`;
+        summary.style.display = 'none';
+        confirmBtn.style.display = 'none';
+        return;
+      }
+
+      container.innerHTML = items.map((item) => `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <div style="font-weight: 600; font-size: 14px;">${item.name} (${item.weight})</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              ${formatPrice(item.priceWithVat)} с НДС × ${item.qty}
+            </div>
+          </div>
+          <div class="qty-stepper" style="width: 96px;">
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
+            <span class="qty-value">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('cartTotalPrice').textContent = formatPrice(total);
+      summary.style.display = 'flex';
+      confirmBtn.style.display = 'block';
+    }
+
+    function openScreen(name) {
+      document.querySelectorAll('.screen').forEach((el) => el.classList.remove('active'));
+      document.getElementById(`screen-${name}`).classList.add('active');
+      updateCartSummary();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openMapScreen() {
+      openScreen('map');
+      initYandexMap();
+    }
+
+    function updateLocationDisplay(coords, addressText) {
+      selectedCoords = coords;
+      selectedAddress = addressText || `Точка на карте (${coords[0].toFixed(6)}, ${coords[1].toFixed(6)})`;
+      document.getElementById('selectedCoords').textContent = `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+      document.getElementById('selectedAddress').textContent = selectedAddress;
+    }
+
+    function initYandexMap() {
+      if (!window.ymaps) {
+        updateLocationDisplay(selectedCoords, 'Яндекс Карты недоступны — используется точка по умолчанию');
+        return;
+      }
+
+      window.ymaps.ready(() => {
+        if (!mapInstance) {
+          mapInstance = new ymaps.Map('ymap', {
+            center: selectedCoords,
+            zoom: 14,
+            controls: ['zoomControl', 'geolocationControl']
+          });
+
+          placemark = new ymaps.Placemark(selectedCoords, {}, {
+            draggable: true,
+            preset: 'islands#goldStretchyIcon'
+          });
+
+          mapInstance.geoObjects.add(placemark);
+          resolveAddress(selectedCoords);
+
+          mapInstance.events.add('click', (e) => {
+            const coords = e.get('coords');
+            placemark.geometry.setCoordinates(coords);
+            resolveAddress(coords);
+          });
+
+          placemark.events.add('dragend', () => {
+            const coords = placemark.geometry.getCoordinates();
+            resolveAddress(coords);
+          });
+        } else {
+          mapInstance.container.fitToViewport();
+        }
+      });
+    }
+
+    function resolveAddress(coords) {
+      updateLocationDisplay(coords, 'Определяем адрес...');
+      if (window.ymaps && ymaps.geocode) {
+        ymaps.geocode(coords).then((res) => {
+          const firstGeoObject = res.geoObjects.get(0);
+          const addr = firstGeoObject ? firstGeoObject.getAddressLine() : null;
+          updateLocationDisplay(coords, addr);
+        }).catch(() => {
+          updateLocationDisplay(coords, null);
+        });
+      } else {
+        updateLocationDisplay(coords, null);
+      }
+    }
+
+    function confirmLocationAndOrder() {
+      const { items, total } = getCartSummary();
+      const orderPayload = {
+        brand: 'Tchibo',
+        items: items.map((i) => ({
+          id: i.id,
+          name: i.name,
+          weight: i.weight,
+          qty: i.qty,
+          priceWithVat: i.priceWithVat
+        })),
+        totalWithVat: total,
+        pickupLocation: {
+          address: selectedAddress,
+          coords: selectedCoords
+        }
+      };
+
+      if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify(orderPayload));
+      }
+
+      document.getElementById('confirmedDetails').innerHTML =
+        `Сумма: <strong>${formatPrice(total)}</strong> (с НДС)<br>` +
+        `Локация отгрузки: <strong>${selectedAddress}</strong>`;
+      document.getElementById('confirmedModal').classList.add('active');
+    }
+
+    function closeConfirmedModal() {
+      document.getElementById('confirmedModal').classList.remove('active');
+      Object.keys(cart).forEach((k) => delete cart[k]);
+      renderCatalog();
+      renderCart();
+      openScreen('catalog');
+    }
+
+    renderCatalog();
+    renderCart();
+    updateCartSummary();
+  </script>
+</body>
+</html>
